@@ -163,5 +163,46 @@ GROUP BY
     et.name;
 
 --Get the names of the top 3 employees who work shifts at the most dealerships?
+SELECT
+    e.first_name,
+    e.last_name,
+    count(de.dealership_employee_id)
+FROM
+    employees e
+    JOIN dealershipemployees de ON de.employee_id = e.employee_id
+GROUP BY
+    de.dealership_employee_id,
+    e.first_name,
+    e.last_name
+ORDER BY
+    dealership_employee_id DESC
+LIMIT
+    3;
 
 --Get a report on the top two employees who has made the most sales through leasing vehicles.
+SELECT
+    e.first_name,
+    e.last_name,
+    count(s.employee_id)
+FROM
+    employees e
+    JOIN sales s ON s.employee_id = e.employee_id
+WHERE
+    s.sales_type_id = 2
+GROUP BY
+    s.employee_id,
+    e.first_name,
+    e.last_name
+LIMIT
+    2 --What are the top 5 US states with the most customers who have purchased a vehicle from a dealership participating in the Carnival platform?
+SELECT
+    count(c.state),
+    c.state
+FROM
+    customers c
+    JOIN sales s ON s.customer_id = c.customer_id
+GROUP BY
+    c.state
+ORDER BY count(c.state) DESC
+LIMIT
+    5
