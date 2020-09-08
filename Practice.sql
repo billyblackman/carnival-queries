@@ -243,8 +243,7 @@ FROM
 GROUP BY
     e.employee_type_id,
     et.name --Create a view that lists all customers without exposing their emails, phone numbers and street address.
-
-CREATE VIEW customers_public AS
+    CREATE VIEW customers_public AS
 SELECT
     customer_id,
     first_name,
@@ -254,4 +253,20 @@ SELECT
     zipcode,
     company_name
 FROM
-    customers c
+    customers c --Create a view named sales2018 that shows the total number of sales for each sales type for the year 2018.
+
+CREATE VIEW sales2018 AS
+SELECT
+    st.name,
+    count(s.sales_type_id)
+FROM
+    salestypes st
+    JOIN sales s ON s.sales_type_id = st.sales_type_id
+    WHERE EXTRACT(YEAR FROM s.purchase_date) = 2018
+GROUP BY
+    st.name,
+    s.sales_type_id
+ORDER BY
+    count(s.sales_type_id) DESC
+
+--Create a view that shows the employee at each dealership with the most number of sales.
