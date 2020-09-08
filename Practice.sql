@@ -194,9 +194,7 @@ GROUP BY
     e.first_name,
     e.last_name
 LIMIT
-    2 
-    
---What are the top 5 US states with the most customers who have purchased a vehicle from a dealership participating in the Carnival platform?
+    2 --What are the top 5 US states with the most customers who have purchased a vehicle from a dealership participating in the Carnival platform?
 SELECT
     count(c.state),
     c.state
@@ -208,9 +206,7 @@ GROUP BY
 ORDER BY
     count(c.state) DESC
 LIMIT
-    5 
-
---What are the top 5 US zipcodes with the most customers who have purchased a vehicle from a dealership participating in the Carnival platform?
+    5 --What are the top 5 US zipcodes with the most customers who have purchased a vehicle from a dealership participating in the Carnival platform?
 SELECT
     count(c.zipcode),
     c.zipcode
@@ -222,9 +218,7 @@ GROUP BY
 ORDER BY
     count(c.zipcode) DESC
 LIMIT
-    5 
-    
---What are the top 5 dealerships with the most customers?
+    5 --What are the top 5 dealerships with the most customers?
 SELECT
     count(d.business_name),
     d.business_name
@@ -236,4 +230,28 @@ GROUP BY
     d.business_name
 ORDER BY
     count(d.business_name) DESC
-LIMIT 5;
+LIMIT
+    5 --Create a view that lists all vehicle body types, makes and models.
+    --Create a view that shows the total number of employees for each employee type.
+    CREATE VIEW employee_type_totals AS
+SELECT
+    count(e.employee_type_id),
+    et.name
+FROM
+    employees e
+    JOIN employeetypes et ON e.employee_type_id = et.employee_type_id
+GROUP BY
+    e.employee_type_id,
+    et.name --Create a view that lists all customers without exposing their emails, phone numbers and street address.
+
+CREATE VIEW customers_public AS
+SELECT
+    customer_id,
+    first_name,
+    last_name,
+    city,
+    state,
+    zipcode,
+    company_name
+FROM
+    customers c
