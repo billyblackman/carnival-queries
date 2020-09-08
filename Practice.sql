@@ -194,7 +194,9 @@ GROUP BY
     e.first_name,
     e.last_name
 LIMIT
-    2 --What are the top 5 US states with the most customers who have purchased a vehicle from a dealership participating in the Carnival platform?
+    2 
+    
+--What are the top 5 US states with the most customers who have purchased a vehicle from a dealership participating in the Carnival platform?
 SELECT
     count(c.state),
     c.state
@@ -203,6 +205,35 @@ FROM
     JOIN sales s ON s.customer_id = c.customer_id
 GROUP BY
     c.state
-ORDER BY count(c.state) DESC
+ORDER BY
+    count(c.state) DESC
 LIMIT
-    5
+    5 
+
+--What are the top 5 US zipcodes with the most customers who have purchased a vehicle from a dealership participating in the Carnival platform?
+SELECT
+    count(c.zipcode),
+    c.zipcode
+FROM
+    customers c
+    JOIN sales s ON s.customer_id = c.customer_id
+GROUP BY
+    c.zipcode
+ORDER BY
+    count(c.zipcode) DESC
+LIMIT
+    5 
+    
+--What are the top 5 dealerships with the most customers?
+SELECT
+    count(d.business_name),
+    d.business_name
+FROM
+    dealerships d
+    JOIN sales s ON s.dealership_id = d.dealership_id
+    JOIN customers c ON c.customer_id = s.customer_id
+GROUP BY
+    d.business_name
+ORDER BY
+    count(d.business_name) DESC
+LIMIT 5;
