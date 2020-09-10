@@ -471,3 +471,61 @@ ORDER BY
     avg(s.price) DESC
 LIMIT
     5;
+
+--Book 3
+--Chapter 1
+--Rheta Raymen an employee of Carnival has asked to be transferred to a different
+--dealership location. She is currently at dealership 751. She would like to work 
+--at dealership 20. Update her record to reflect her transfer.
+UPDATE
+    dealershipemployees
+SET
+    dealership_id = 20
+WHERE
+    dealership_id = 751;
+
+--A Sales associate needs to update a sales record because her customer want so
+--pay wish Mastercard instead of American Express. Update Customer, Layla Igglesden
+--Sales record which has an invoice number of 2781047589.
+UPDATE
+    sales
+SET
+    payment_method = 'mastercard'
+WHERE
+    invoice_number = '2781047589';
+
+--A sales employee at carnival creates a new sales record for a sale they are
+--trying to close. The customer, last minute decided not to purchase the vehicle.
+--Help delete the Sales record with an invoice number of '7628231837'.
+DELETE FROM
+    sales
+WHERE
+    sales.invoice_number = '7628231837';
+
+--An employee was recently fired so we must delete them from our database.
+--Delete the employee with employee_id of 35. What problems might you run
+--into when deleting? How would you recommend fixing it?
+--
+--Foreign key constraints on sales dealershipemployees would cause problems
+--when trying to delete an employee. You could add a cascade delete to these
+--tables, but I don't think deleting sales would be a good idea. I think I
+--would add a cascade delete to the employee_id foreign key on dealershipemployees,
+--and a SET NULL on the employee_id of sales. Better yet, I would add a boolean 
+--property, 'active', to employees, which would default to true and change
+--to false when an employee leaves.
+
+--Carnival would like to create a stored procedure that handles the case of
+--updating their vehicle inventory when a sale occurs. They plan to do this
+--by flagging the vehicle as is_sold which is a field on the Vehicles table.
+--When set to True this flag will indicate that the vehicle is no longer
+--available in the inventory. Why not delete this vehicle? We don't want to
+--delete it because it is attached to a sales record.
+CREATE PROCEDURE sell_car(IN vehicle_id int) language plpgsql AS $$ BEGIN
+UPDATE
+    vehicles
+SET
+    is_sold = '1'
+WHERE
+    vehicle_id = (vehicle_id);
+
+END $$;
