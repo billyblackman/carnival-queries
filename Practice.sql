@@ -529,3 +529,21 @@ WHERE
     vehicle_id = (vehicle_id);
 
 END $$;
+
+--Carnival would also like to handle the case for when a car gets returned
+--by a customer. When this occurs they must add the car back to the inventory
+--and mark the original sales record as returned = True.
+
+CREATE PROCEDURE return_car(IN vehicle_id int) language plpgsql AS $$ BEGIN
+UPDATE
+    vehicles
+SET
+    returned = '1'
+WHERE
+    vehicle_id = (vehicle_id);
+
+END $$;
+
+--Carnival staff are required to do an oil change on the returned car before
+--putting it back on the sales floor. In our stored procedure, we must also
+--log the oil change within the OilChangeLog table.
