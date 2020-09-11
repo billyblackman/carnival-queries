@@ -513,14 +513,13 @@ WHERE
 --and a SET NULL on the employee_id of sales. Better yet, I would add a boolean 
 --property, 'active', to employees, which would default to true and change
 --to false when an employee leaves.
-
 --Carnival would like to create a stored procedure that handles the case of
 --updating their vehicle inventory when a sale occurs. They plan to do this
 --by flagging the vehicle as is_sold which is a field on the Vehicles table.
 --When set to True this flag will indicate that the vehicle is no longer
 --available in the inventory. Why not delete this vehicle? We don't want to
 --delete it because it is attached to a sales record.
-CREATE PROCEDURE sell_car(IN vehicle_id int) language plpgsql AS $$ BEGIN
+CREATE PROCEDURE sell_car(IN vehicle_id int) language plpgsql AS $ $ BEGIN
 UPDATE
     vehicles
 SET
@@ -528,13 +527,12 @@ SET
 WHERE
     vehicle_id = (vehicle_id);
 
-END $$;
+END $ $;
 
 --Carnival would also like to handle the case for when a car gets returned
 --by a customer. When this occurs they must add the car back to the inventory
 --and mark the original sales record as returned = True.
-
-CREATE PROCEDURE return_car(IN vehicle_id int) language plpgsql AS $$ BEGIN
+CREATE PROCEDURE return_car(IN vehicle_id int) language plpgsql AS $ $ BEGIN
 UPDATE
     vehicles
 SET
@@ -542,8 +540,69 @@ SET
 WHERE
     vehicle_id = (vehicle_id);
 
-END $$;
+END $ $;
 
 --Carnival staff are required to do an oil change on the returned car before
 --putting it back on the sales floor. In our stored procedure, we must also
 --log the oil change within the OilChangeLog table.
+CREATE PROCEDURE change_car_oil(IN vehicle_id int) language plpgsql AS $$ BEGIN
+INSERT INTO
+    oilchangelogs (date_occurred, vehicle_id)
+VALUES
+    (CURRENT_TIMESTAMP, vehicle_id);
+
+END $$;
+
+--Chapter 5
+--Create a trigger for when a new Sales record is added, set the purchase
+--date to 3 days from the current date.
+
+CREATE OR REPLACE FUNCTION set_purchase_date() 
+  RETURNS TRIGGER 
+  LANGUAGE PlPGSQL
+AS $$
+BEGIN
+  -- trigger function logic
+  UPDATE sales
+  SET purchase_date = CURRENT_TIMESTAMP + interval '3 days'
+  WHERE sales.sale_id = NEW.sale_id;
+  
+  RETURN NULL;
+END;
+$$
+
+CREATE TRIGGER new_sale_made
+  AFTER INSERT
+  ON sales
+  FOR EACH ROW
+  EXECUTE PROCEDURE set_purchase_date();
+
+--Create a trigger for updates to the Sales table. If the pickup date
+--is on or before the purchase date, set the pickup date to 7 days after
+--the purchase date. If the pickup date is after the purchase date but
+--less than 7 days out from the purchase date, add 4 additional days to the pickup date.
+
+CREATE OR REPLACE FUNCTION set_pickup_date() 
+  RETURNS TRIGGER 
+  LANGUAGE PlPGSQL
+AS $$
+BEGIN
+    IF NEW.pickup_date <= NEW.purchase_date THEN
+        UPDATE sales
+        SET pickup_date = NEW.purchase_date + 7
+        WHERE sales.sale_id = NEW.sale_id;
+    ELSIF NEW.pickup_date > NEW.purchase_date AND NEW.pickup_date < NEW.purchase_date + 7 THEN
+        UPDATE sales
+        SET pickup_date = NEW.pickup_date + 4
+        WHERE sales.sale_id = NEW.sale_id;
+    END IF;
+
+    RETURN NEW;
+END;
+$$
+
+CREATE TRIGGER update_sale_made_pickup_date
+  BEFORE UPDATE
+  ON sales
+  FOR EACH ROW
+  EXECUTE PROCEDURE set_pickup_date();
