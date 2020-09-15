@@ -587,14 +587,10 @@ CREATE OR REPLACE FUNCTION set_pickup_date()
   LANGUAGE PlPGSQL
 AS $$
 BEGIN
-    IF NEW.pickup_date <= NEW.purchase_date THEN
-        UPDATE sales
-        SET pickup_date = NEW.purchase_date + 7
-        WHERE sales.sale_id = NEW.sale_id;
-    ELSIF NEW.pickup_date > NEW.purchase_date AND NEW.pickup_date < NEW.purchase_date + 7 THEN
-        UPDATE sales
-        SET pickup_date = NEW.pickup_date + 4
-        WHERE sales.sale_id = NEW.sale_id;
+    IF NEW.pickup_date > NEW.purchase_date AND NEW.pickup_date <= NEW.purchase_date  + integer '7' THEN
+	  NEW.pickup_date := NEW.pickup_date + integer '4';
+	ELSIF NEW.pickup_date <= NEW.purchase_date THEN
+	  NEW.pickup_date := NEW.purchase_date + integer '7';
     END IF;
 
     RETURN NEW;
@@ -606,3 +602,32 @@ CREATE TRIGGER update_sale_made_pickup_date
   ON sales
   FOR EACH ROW
   EXECUTE PROCEDURE set_pickup_date();
+
+  -- Because Carnival is a single company, 
+-- we want to ensure that there is consistency in the data provided to the user. 
+-- Each dealership has it's own website but we want to make sure the website URL are consistent and easy to remember. 
+-- Therefore, any time a new dealership is added or an existing dealership is updated, 
+-- we want to ensure that the website URL has the following format: 
+-- http://www.carnivalcars.com/{name of the dealership with underscores separating words}.
+
+CREATE OR REPLACE FUNCTION format_dealership_webiste() 
+  RETURNS TRIGGER 
+  LANGUAGE PlPGSQL
+AS $$
+BEGIN
+-- 	NEW.website := CONCAT('http://www.carnivalcars.com/', REGEXP_REPLACE(LOWER(NEW.business_name), '( ){1,}', '_', 'g'));
+	NEW.website := CONCAT('http://www.carnivalcars.com/', REPLACE(LOWER(NEW.business_name), ' ', '_'));
+
+	RETURN NEW;
+END;
+$$
+
+CREATE TRIGGER dealership_website
+BEFORE INSERT OR UPDATE
+ON dealerships
+FOR EACH ROW EXECUTE PROCEDURE format_dealership_webiste();
+
+INSERT INTO dealerships(business_name, phone, city, state, website, tax_id)
+VALUES ('New Dealership in Music City', '615-200-2000', 'Nashville', 'Tennessee', 'www.test.com', 'ab-200-2000');
+
+SELECT * FROM dealerships ORDER BY dealership_id DESC;
