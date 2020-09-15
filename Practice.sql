@@ -545,89 +545,184 @@ END $ $;
 --Carnival staff are required to do an oil change on the returned car before
 --putting it back on the sales floor. In our stored procedure, we must also
 --log the oil change within the OilChangeLog table.
-CREATE PROCEDURE change_car_oil(IN vehicle_id int) language plpgsql AS $$ BEGIN
+CREATE PROCEDURE change_car_oil(IN vehicle_id int) language plpgsql AS $ $ BEGIN
 INSERT INTO
     oilchangelogs (date_occurred, vehicle_id)
 VALUES
     (CURRENT_TIMESTAMP, vehicle_id);
 
-END $$;
+END $ $;
 
 --Chapter 5
 --Create a trigger for when a new Sales record is added, set the purchase
 --date to 3 days from the current date.
+CREATE
+OR REPLACE FUNCTION set_purchase_date() RETURNS TRIGGER LANGUAGE PlPGSQL AS $ $ BEGIN -- trigger function logic
+UPDATE
+    sales
+SET
+    purchase_date = CURRENT_TIMESTAMP + INTERVAL '3 days'
+WHERE
+    sales.sale_id = NEW.sale_id;
 
-CREATE OR REPLACE FUNCTION set_purchase_date() 
-  RETURNS TRIGGER 
-  LANGUAGE PlPGSQL
-AS $$
-BEGIN
-  -- trigger function logic
-  UPDATE sales
-  SET purchase_date = CURRENT_TIMESTAMP + interval '3 days'
-  WHERE sales.sale_id = NEW.sale_id;
-  
-  RETURN NULL;
+RETURN NULL;
+
 END;
-$$
 
-CREATE TRIGGER new_sale_made
-  AFTER INSERT
-  ON sales
-  FOR EACH ROW
-  EXECUTE PROCEDURE set_purchase_date();
+$ $ CREATE TRIGGER new_sale_made
+AFTER
+INSERT
+    ON sales FOR EACH ROW EXECUTE PROCEDURE set_purchase_date();
 
 --Create a trigger for updates to the Sales table. If the pickup date
 --is on or before the purchase date, set the pickup date to 7 days after
 --the purchase date. If the pickup date is after the purchase date but
 --less than 7 days out from the purchase date, add 4 additional days to the pickup date.
+CREATE
+OR REPLACE FUNCTION set_pickup_date() RETURNS TRIGGER LANGUAGE PlPGSQL AS $ $ BEGIN IF NEW.pickup_date > NEW.purchase_date
+AND NEW.pickup_date <= NEW.purchase_date + integer '7' THEN NEW.pickup_date := NEW.pickup_date + integer '4';
 
-CREATE OR REPLACE FUNCTION set_pickup_date() 
-  RETURNS TRIGGER 
-  LANGUAGE PlPGSQL
-AS $$
-BEGIN
-    IF NEW.pickup_date > NEW.purchase_date AND NEW.pickup_date <= NEW.purchase_date  + integer '7' THEN
-	  NEW.pickup_date := NEW.pickup_date + integer '4';
-	ELSIF NEW.pickup_date <= NEW.purchase_date THEN
-	  NEW.pickup_date := NEW.purchase_date + integer '7';
-    END IF;
+ELSIF NEW.pickup_date <= NEW.purchase_date THEN NEW.pickup_date := NEW.purchase_date + integer '7';
 
-    RETURN NEW;
+END IF;
+
+RETURN NEW;
+
 END;
-$$
 
-CREATE TRIGGER update_sale_made_pickup_date
-  BEFORE UPDATE
-  ON sales
-  FOR EACH ROW
-  EXECUTE PROCEDURE set_pickup_date();
+$ $ CREATE TRIGGER update_sale_made_pickup_date BEFORE
+UPDATE
+    ON sales FOR EACH ROW EXECUTE PROCEDURE set_pickup_date();
 
-  -- Because Carnival is a single company, 
+-- Because Carnival is a single company, 
 -- we want to ensure that there is consistency in the data provided to the user. 
 -- Each dealership has it's own website but we want to make sure the website URL are consistent and easy to remember. 
 -- Therefore, any time a new dealership is added or an existing dealership is updated, 
 -- we want to ensure that the website URL has the following format: 
 -- http://www.carnivalcars.com/{name of the dealership with underscores separating words}.
+CREATE
+OR REPLACE FUNCTION format_dealership_webiste() RETURNS TRIGGER LANGUAGE PlPGSQL AS $ $ BEGIN -- 	NEW.website := CONCAT('http://www.carnivalcars.com/', REGEXP_REPLACE(LOWER(NEW.business_name), '( ){1,}', '_', 'g'));
+NEW.website := CONCAT(
+    'http://www.carnivalcars.com/',
+    REPLACE(LOWER(NEW.business_name), ' ', '_')
+);
 
-CREATE OR REPLACE FUNCTION format_dealership_webiste() 
-  RETURNS TRIGGER 
-  LANGUAGE PlPGSQL
-AS $$
-BEGIN
--- 	NEW.website := CONCAT('http://www.carnivalcars.com/', REGEXP_REPLACE(LOWER(NEW.business_name), '( ){1,}', '_', 'g'));
-	NEW.website := CONCAT('http://www.carnivalcars.com/', REPLACE(LOWER(NEW.business_name), ' ', '_'));
+RETURN NEW;
 
-	RETURN NEW;
 END;
-$$
 
-CREATE TRIGGER dealership_website
-BEFORE INSERT OR UPDATE
-ON dealerships
-FOR EACH ROW EXECUTE PROCEDURE format_dealership_webiste();
+$ $ CREATE TRIGGER dealership_website BEFORE
+INSERT
+    OR
+UPDATE
+    ON dealerships FOR EACH ROW EXECUTE PROCEDURE format_dealership_webiste();
 
-INSERT INTO dealerships(business_name, phone, city, state, website, tax_id)
-VALUES ('New Dealership in Music City', '615-200-2000', 'Nashville', 'Tennessee', 'www.test.com', 'ab-200-2000');
+INSERT INTO
+    dealerships(
+        business_name,
+        phone,
+        city,
+        state,
+        website,
+        tax_id
+    )
+VALUES
+    (
+        'New Dealership in Music City',
+        '615-200-2000',
+        'Nashville',
+        'Tennessee',
+        'www.test.com',
+        'ab-200-2000'
+    );
 
-SELECT * FROM dealerships ORDER BY dealership_id DESC;
+SELECT
+    *
+FROM
+    dealerships
+ORDER BY
+    dealership_id DESC;
+
+--If a phone number is not provided for a new dealership,
+--set the phone number to the default customer care number
+--777-111-0305.
+--For accounting purposes, the name of the state needs to
+--be part of the dealership's tax id. For example, if the
+--tax id provided is bv-832-2h-se8w for a dealership in
+--Virginia, then it needs to be put into the database as
+--bv-832-2h-se8w--virginia.
+--Write a transaction to:
+--Add a new role for employees called Automotive Mechanic
+--Add five new mechanics, their data is up to you
+--Each new mechanic will be working at all three of these dealerships:
+--Sollowaye Autos of New York, Hrishchenko Autos of New York and
+--Cadreman Autos of New York
+BEGIN;
+INSERT INTO
+    employeetypes(name)
+VALUES
+('Automotive Mechanic');
+
+INSERT INTO
+    employees(
+        first_name,
+        last_name,
+        email_address,
+        phone,
+        employee_type_id
+    )
+VALUES
+(
+        'Lyssa',
+        'Blackie',
+        '930-267-1672',
+        'lblackie0@printfriendly.com',
+        8
+    ),
+    (
+        'Catarina',
+        'Wayvill',
+        '872-827-2769',
+        'cwayvill1@time.com',
+        8
+    ),
+    (
+        'Tess',
+        'Blacklock',
+        '354-122-7280',
+        'tblacklock2@goodreads.com',
+        8
+    ),
+    (
+        'Julia',
+        'Diloway',
+        '903-773-8514',
+        'jdiloway3@cisco.com',
+        8
+    ),
+    (
+        'Wainwright',
+        'Bearfoot',
+        '248-453-6653',
+        'wbearfoot4@google.co.uk',
+        8
+    );
+
+INSERT INTO
+    dealershipemployees(employee_id, dealership_id)
+VALUES
+    (1001, 50),
+    (1001, 128),
+    (1001, 322),
+    (1002, 50),
+    (1002, 128),
+    (1002, 322),
+    (1003, 50),
+    (1003, 128),
+    (1003, 322),
+    (1004, 50),
+    (1004, 128),
+    (1004, 322),
+    (1005, 50),
+    (1005, 128),
+    (1005, 322);
