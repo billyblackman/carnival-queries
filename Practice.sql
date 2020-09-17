@@ -658,10 +658,11 @@ ORDER BY
 --Sollowaye Autos of New York, Hrishchenko Autos of New York and
 --Cadreman Autos of New York
 BEGIN;
+
 INSERT INTO
-    employeetypes(name)
+    public.employeetypes(name)
 VALUES
-('Automotive Mechanic');
+    ('Automotive Mechanic');
 
 INSERT INTO
     employees(
@@ -672,7 +673,7 @@ INSERT INTO
         employee_type_id
     )
 VALUES
-(
+    (
         'Lyssa',
         'Blackie',
         '930-267-1672',
@@ -726,3 +727,71 @@ VALUES
     (1005, 50),
     (1005, 128),
     (1005, 322);
+
+COMMIT;
+
+--Create a transaction for:
+--Creating a new dealership in Washington, D.C. called
+--Felphun Automotive
+--Hire 3 new employees for the new dealership:
+--Sales Manager, General Manager and Customer Service.
+--All employees that currently work at Scrogges Autos of
+--District of Columbia will now start working at Felphun
+--Automotive instead.
+BEGIN;
+
+INSERT INTO
+    dealerships(business_name, city, state)
+VALUES
+(
+        'Felphun Automotive',
+        'Washington',
+        'District of Columbia'
+    );
+
+INSERT INTO
+    employees(
+        first_name,
+        last_name,
+        email_address,
+        phone,
+        employee_type_id
+    )
+VALUES
+(
+        'Maud',
+        'Stillman',
+        'mstillman0@netvibes.com',
+        '255-188-0863',
+        3
+    ),
+    (
+        'Bird',
+        'Jacobs',
+        'bjacobs1@adobe.com',
+        '528-517-4919',
+        6
+    ),
+    (
+        'Gus',
+        'Sherreard',
+        'gsherreard2@usda.gov',
+        '318-959-2032',
+        4
+    );
+
+UPDATE
+    dealershipemployees
+SET
+    dealership_id = (
+        SELECT
+            dealership_id
+        FROM
+            dealership
+        WHERE
+            business_name = 'Felphun Automotive'
+    )
+WHERE
+    dealership_id = 129;
+
+COMMIT;
