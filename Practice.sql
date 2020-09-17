@@ -743,7 +743,7 @@ BEGIN;
 INSERT INTO
     dealerships(business_name, city, state)
 VALUES
-(
+    (
         'Felphun Automotive',
         'Washington',
         'District of Columbia'
@@ -758,7 +758,7 @@ INSERT INTO
         employee_type_id
     )
 VALUES
-(
+    (
         'Maud',
         'Stillman',
         'mstillman0@netvibes.com',
@@ -795,3 +795,90 @@ WHERE
     dealership_id = 129;
 
 COMMIT;
+
+--Provide a way for the accounting team to track all financial
+--transactions by creating a new table called Accounts Receivable.
+--The table should have the following columns: credit_amount,
+--debit_amount, date_received as well as a PK and a FK to 
+--associate a sale with each transaction.
+CREATE TABLE accounts_receivable(
+    accounts_receivable_id int PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    credit_amount decimal,
+    debit_amount decimal,
+    date_received timestamp,
+    sale_id int,
+    PRIMARY KEY (accounts_receivable_id),
+    FOREIGN KEY (sale_id) REFERENCES sales(sale_id)
+);
+
+--Set up a trigger on the Sales table. When a new row is added,
+--add a new record to the Accounts Receivable table with the
+--deposit as credit_amount, the timestamp as date_received
+--and the appropriate sale_id.
+CREATE
+OR REPLACE FUNCTION add_accounts_receivable() RETURNS TRIGGER LANGUAGE PlPGSQL AS $ $ BEGIN -- trigger function logic
+INSERT INTO
+    accounts_receivable(sale_id, credit_amount, date_received)
+VALUES
+(NEW.sale_id, NEW.deposit, CURRENT_TIMESTAMP);
+
+RETURN NULL;
+
+END;
+
+$ $;
+
+CREATE TRIGGER new_deposit_made
+AFTER
+INSERT
+    ON sales FOR EACH ROW EXECUTE PROCEDURE add_accounts_receivable();
+
+CREATE
+OR REPLACE FUNCTION update_accounts_receivable() RETURNS TRIGGER LANGUAGE PlPGSQL AS $$ BEGIN -- trigger function logic
+IF NEW.sale_returned <> OLD.sale_returned THEN
+INSERT INTO
+    accounts_receivable(sale_id, debit_amount, date_received)
+VALUES
+(OLD.sale_id, OLD.deposit, CURRENT_TIMESTAMP);
+
+END IF;
+
+RETURN NULL;
+
+END;
+
+$$;
+
+CREATE TRIGGER new_return_made
+AFTER
+UPDATE
+    ON sales FOR EACH ROW EXECUTE PROCEDURE update_accounts_receivable();
+
+INSERT INTO
+    public.sales(
+        sales_type_id,
+        vehicle_id,
+        employee_id,
+        customer_id,
+        dealership_id,
+        price,
+        deposit,
+        purchase_date,
+        pickup_date,
+        invoice_number,
+        payment_method
+    )
+VALUES
+    (
+        1,
+        5,
+        5,
+        5,
+        5,
+        5,
+        100,
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP,
+        10,
+        'mastercard'
+    );
