@@ -913,3 +913,68 @@ DROP PROCEDURE new_employee(IN first_name varchar,IN last_name varchar,
 -- TEST							 
 SELECT * FROM employees WHERE first_name = 'Salburt';	
 SELECT * FROM dealershipemployees WHERE employee_id = 1005;
+
+--Let's take a look at how some of our queries perform?
+--Take notes of how each query performs. Then create indexes
+--for each query below. Rerun your queries to see if they
+--improve. If they do not improve, why?
+
+--1.
+ EXPLAIN ANALYZE SELECT * from Employees WHERE employee_type_id = 1;
+ 
+"Planning Time: 0.678 ms"
+"Execution Time: 0.386 ms"
+
+ CREATE INDEX employee_type_id_idx
+	ON employees (employee_type_id);
+
+"Planning Time: 1.424 ms"
+"Execution Time: 0.119 ms"
+
+--2.
+EXPLAIN ANALYZE SELECT * from Sales WHERE dealership_id = 500;
+
+"Planning Time: 0.095 ms"
+"Execution Time: 0.178 ms"
+
+CREATE INDEX sales_dealership_id_idx
+	ON sales (dealership_id);
+
+"Planning Time: 1.368 ms"
+"Execution Time: 0.072 ms"
+
+--3.
+SELECT * from customers WHERE state = 'CA';
+
+"Planning Time: 2.712 ms"
+"Execution Time: 0.914 ms"
+
+CREATE INDEX customers_state_idx
+    ON customers (state);
+
+"Planning Time: 1.336 ms"
+"Execution Time: 0.165 ms"
+
+--4.
+EXPLAIN ANALYZE SELECT * from vehicles where year_of_car BETWEEN 2018 AND 2020;
+
+"Planning Time: 3.184 ms"
+"Execution Time: 0.965 ms"
+
+CREATE INDEX vehicles_year_idx
+    ON vehicles (year_of_car);
+
+"Planning Time: 1.625 ms"
+"Execution Time: 0.344 ms"
+
+--5.
+EXPLAIN ANALYZE SELECT * from vehicles where floor_price < 30000;
+
+"Planning Time: 0.092 ms"
+"Execution Time: 0.275 ms"
+
+CREATE INDEX vehicles_floor_price_idx
+    ON vehicles (floor_price);
+
+"Planning Time: 0.110 ms"
+"Execution Time: 0.277 ms"
