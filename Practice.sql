@@ -978,3 +978,42 @@ CREATE INDEX vehicles_floor_price_idx
 
 "Planning Time: 0.110 ms"
 "Execution Time: 0.277 ms"
+
+--Group Project
+
+-- Often need to see sales data from particular dealerships, employees, or customers
+-- Index all 3
+CREATE INDEX sales_employee_idx ON sales
+(
+    employee_id
+);
+EXPLAIN ANALYZE SELECT * FROM sales
+WHERE employee_id = 2;
+CREATE INDEX sales_customer_idx ON sales
+(
+    customer_id
+);
+EXPLAIN ANALYZE SELECT * FROM sales
+WHERE customer_id = 2;
+-- Find employees who make the largest sales
+CREATE INDEX sales_price_idx ON sales
+(
+   price
+);
+EXPLAIN ANALYZE SELECT e.first_name, e.last_name, s.price FROM sales s
+JOIN employees e ON e.employee_id = s.employee_id
+WHERE price > 70000 and price < 85000;
+-- Look up customers
+CREATE INDEX customer_name_idx ON customers
+(
+    last_name, first_name
+);
+EXPLAIN ANALYZE SELECT * FROM customers
+WHERE last_name = 'Gresswell';
+-- Look up employees
+CREATE INDEX employee_idx ON employees
+(
+    last_name, first_name
+);
+EXPLAIN ANALYZE SELECT * FROM employees
+WHERE last_name = 'Graalmans';
