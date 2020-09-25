@@ -551,7 +551,7 @@ INSERT INTO
 VALUES
     (CURRENT_TIMESTAMP, vehicle_id);
 
-END $ $;
+END $$;
 
 --Chapter 5
 --Create a trigger for when a new Sales record is added, set the purchase
@@ -1017,3 +1017,65 @@ CREATE INDEX employee_idx ON employees
 );
 EXPLAIN ANALYZE SELECT * FROM employees
 WHERE last_name = 'Graalmans';
+
+--Transaction to update vehicle when a sale is returned
+CREATE OR REPLACE PROCEDURE return_sold_vehicle(in vehicleId int)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	UPDATE sales
+	SET returned = true
+	WHERE vehicle_id = vehicleId;
+	UPDATE vehicles
+	SET is_sold = false
+	WHERE vehicle_id = vehicleId;
+	EXCEPTION WHEN others THEN 
+  ROLLBACK;
+END
+$$;
+
+--Index for dealership names
+CREATE INDEX dealership_name_idx ON dealerships(business_name);
+
+--
+CREATE PROCEDURE hire_employee(IN dealership_one int, IN dealership_two int) language plpgsql AS $$ BEGIN
+DECLARE 
+  NewEmployeeId integer;
+BEGIN
+	INSERT INTO employees(first_name,last_name,email_address,phone,employee_type_id,is_active)
+		VALUES
+		(first_name, last_name, email_address, phone, employee_type_id, is_active) 
+		RETURNING employee_id INTO NewEmployeeId;
+COMMIT;
+	INSERT INTO dealershipemployees(employee_id, dealership_id)
+		VALUES(NewEmployeeId, dealership_one);
+COMMIT;
+	INSERT INTO dealershipemployees(employee_id, dealership_id)
+		VALUES(NewEmployeeId, dealership_two);	
+END;
+
+--
+
+CREATE OR REPLACE VIEW employee_sales_metrics AS
+  SELECT 
+    CONCAT (e.first_name, '', e.last_name) AS full_name,
+    SUM (s.price) AS sum_of_sales,
+	ROUND (AVG (s.price),2) AS average_sale_price,
+	COUNT (s.sale_id) AS number_of_sales
+	FROM employees e
+  INNER JOIN sales s ON s.employee_id = e.employee_id
+  GROUP BY full_name
+  ORDER BY sum_of_sales DESC;
+
+  --
+  CREATE OR REPLACE VIEW vehicle_type_sold_metrics AS
+  SELECT
+  CONCAT (vmk.name , ' ', vmd.name , ' ', vbt.name) AS vehicle_name, COUNT(vt.vehicle_type_id) AS number_sold
+	FROM vehicles v
+  INNER JOIN sales s ON s.vehicle_id = v.vehicle_id
+  INNER JOIN VehicleTypes vt ON vt.vehicle_type_id = v.vehicle_type_id
+  INNER JOIN vehiclemakes vmk ON vt.make_id = vmk.vehicle_make_id
+  INNER JOIN vehiclemodels vmd ON vt.model_id = vmd.vehicle_model_id
+  INNER JOIN vehiclebodytypes vbt ON vt.body_type_id = vbt.vehicle_body_type_id
+  GROUP BY vt.vehicle_type_id, vmk.name, vmd.name, vbt.name
+  ORDER BY number_sold DESC;
